@@ -1,3 +1,4 @@
 twilio
 loguru
 python-dotenv
+selenium
