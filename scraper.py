@@ -1,14 +1,13 @@
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from bs4 import BeautifulSoup
-import re
 from loguru import logger
-import sys
-import time
+import sys, sched, time, re
 from send_sms import price_alerts
 
 logger.remove()
@@ -30,7 +29,11 @@ pairs = {
     "1L-ETH/USD": None,
 }
 
-driver = webdriver.Firefox()
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+
+# driver = webdriver.Firefox()
 driver.get("https://pools.tracer.finance/")
 
 
@@ -169,9 +172,8 @@ balancer_pools = get_inner_html(balancer_pools_xpath)
 percent_diff = ((token_rate - balancer_pools) / balancer_pools) * 100
 pairs["1L-ETH/USD"] = token_rate, balancer_pools, percent_diff
 
+# extract key value pairs for trading pairs that have over 2% difference
 over_two_percent = {k: v for k, v in pairs.items() if pairs[k][2] >= 2}
-# for item in over_one_percent.items():
-#     item[0], round(item[1][2], 2)
 
 # create list of lists for trading pairs and their percentage differences
 pair_percentages = [
@@ -180,19 +182,8 @@ pair_percentages = [
 
 message = ""
 for pair in pair_percentages:
-    message += pair[0] + ": " + str(pair[1]) + "; "
+    message += "(" + pair[0] + ": " + str(pair[1]) + ") "
 
-
-# f"{ex[0]}: {ex[1]}%"
 
 price_alerts(message)
 driver.close()
-
-# BTC/USDC dropdown - //*[@id="headlessui-menu-item-11"]
-# ETH/USDC dropdown - //*[@id="headlessui-menu-item-12"]
-# power leverage 1 button - /html/body/div[1]/div/div/div[2]/div/div[4]/span/button[1]
-# power leverage 3 button - /html/body/div[1]/div/div/div[2]/div/div[4]/span/button[2]
-# amount input - /html/body/div[1]/div/div/div[2]/div/div[5]/div[1]/input
-# long button - /html/body/div[1]/div/div/div[2]/div/div[3]/span[2]/span/button[1]
-# short button - /html/body/div[1]/div/div/div[2]/div/div[3]/span[2]/span/button[2]
-# connect wallet button - /html/body/div[1]/div/div/div[2]/div/button
