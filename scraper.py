@@ -1,3 +1,7 @@
+"""
+Script which uses selenium to run a headless chromium browser to scrape values from Perpetual Pools and Arbitrum Balancer and sends an SMS notification 
+containing the token pairs for which the percentage difference is greater than X%. Allows opportunities for arbitrage to be spotted and exploited.
+"""
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
@@ -20,6 +24,7 @@ def main():
         level="DEBUG",
     )
 
+    X = 2  # percentage difference to send alert at
     PAIRS = {
         "1L-BTC/USD": None,
         "3L-BTC/USD": None,
@@ -66,7 +71,15 @@ def main():
     # add 1 to input field
     ActionChains(driver).click(amount_input).send_keys("1").perform()
 
-    def get_inner_html(xpath):
+    def get_inner_html(xpath) -> float:
+        """Extracts inner html from a given element as identified by its xpath. Removes html elements and replaces any characters that aren't numeric or decimal.
+
+        Args:
+            xpath (str): xpath of the element of interest e.g. '/html/body/div[1]'.
+
+        Returns:
+            float: cleaned numeric string converted into a float e.g. 1.3.
+        """
         time.sleep(1)
         innerHtml = WebDriverWait(driver, 10).until(
             lambda driver: driver.find_element_by_xpath(xpath).get_attribute(
@@ -81,6 +94,7 @@ def main():
         except Exception as e:
             logger.debug(e)
 
+    # will likely break once site changes but accurate as of 18/10/21
     token_rate_xpath = "/html/body/div[1]/div/div/div[2]/div/div[6]/div/div/div/div[1]/div[1]/span/div/span[2]"
     balancer_pools_xpath = (
         "/html/body/div[1]/div/div/div[2]/div/div[6]/div/div/div/div[1]/div[3]/div[2]/a"
@@ -103,14 +117,6 @@ def main():
     percent_diff = ((token_rate - balancer_pools) / balancer_pools) * 100
     PAIRS["3L-BTC/USD"] = token_rate, balancer_pools, percent_diff
     logger.debug(percent_diff)
-
-    def get_rates(func):
-        def wrapper(*args, **kwargs):
-            get_inner_html(token_rate_xpath)
-            get_inner_html(balancer_pools_xpath)
-            return func(*args, **kwargs)
-
-        return wrapper
 
     driver.find_element(
         By.XPATH, "/html/body/div[1]/div/div/div[2]/div/div[3]/span[2]/span/button[2]"
@@ -170,12 +176,12 @@ def main():
     percent_diff = ((token_rate - balancer_pools) / balancer_pools) * 100
     PAIRS["1L-ETH/USD"] = token_rate, balancer_pools, percent_diff
 
-    # extract key value pairs for trading pairs that have over 2% difference
-    over_two_percent = {k: v for k, v in PAIRS.items() if PAIRS[k][2] >= 0.5}
+    # extract key value pairs for trading pairs that have over X% difference
+    over_x_percent = {k: v for k, v in PAIRS.items() if v[2] >= X}
 
     # create list of lists for trading pairs and their percentage differences
     pair_percentages = [
-        [item[0], round(item[1][2], 2)] for item in over_two_percent.items()
+        [item[0], round(item[1][2], 2)] for item in over_x_percent.items()
     ]
 
     message = ""
