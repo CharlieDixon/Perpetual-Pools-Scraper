@@ -61,7 +61,7 @@ def main():
     # )
     s = Service("/Users/csd/PycharmProjects/tracer_pools/.venv/bin/geckodriver")
     driver = webdriver.Firefox(
-        service = s,
+        service=s,
         options=options,
     )
     driver.install_addon(ADDON_PATH, temporary=True)
@@ -97,16 +97,14 @@ def main():
     )
     time.sleep(1)
     # enter recovery phrase and new password into input boxes
-    # inputs = driver.find_elements_by_xpath("//input")
     inputs = driver.find_elements(By.XPATH, "//input")
     inputs[0].send_keys(SECRET_RECOVERY_PHRASE)
     inputs[1].send_keys(NEW_PASSWORD)
     inputs[2].send_keys(NEW_PASSWORD)
     time.sleep(1)
-    driver.find_element(By.CSS_SELECTOR, ".first-time-flow__terms").click() # toc checkbox
-    # driver.find_element_by_css_selector(
-    #     ".first-time-flow__terms"
-    # ).click()  # toc checkbox
+    driver.find_element(
+        By.CSS_SELECTOR, ".first-time-flow__terms"
+    ).click()  # toc checkbox
     wait_and_click('//button[text()="Import"]')  # click import button
     wait_and_click('//button[text()="All Done"]')  # click all done
     driver.get("https://pools.tracer.finance/")
@@ -162,7 +160,7 @@ def main():
     # wait for dropdown options to appear and click first option
     wait_and_click(BTC_DROPDOWN)
     # select input
-    amount_input = driver.find_elements_by_xpath("//input")[0]
+    amount_input = driver.find_elements(By.XPATH, "//input")[0]
     # add 1000 to input field
     amount_input.send_keys(1000)
 
@@ -175,7 +173,7 @@ def main():
         """
         time.sleep(1)
         innerHtml = WebDriverWait(driver, 10).until(
-            lambda driver: driver.find_element_by_xpath(xpath).get_attribute(
+            lambda driver: driver.find_element(By.XPATH, xpath).get_attribute(
                 "innerHTML"
             )
         )
