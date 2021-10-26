@@ -51,14 +51,10 @@ def main():
     NEW_PASSWORD = os.getenv("NEW_PASSWORD")
 
     options = Options()
-    options.add_argument("--headless")
+    # options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--single-process")
     options.add_argument("--disable-dev-shm-usage")
-    # driver = webdriver.Firefox(
-    #     executable_path="/Users/csd/PycharmProjects/tracer_pools/.venv/bin/geckodriver",
-    #     options=options,
-    # )
     s = Service("/Users/csd/PycharmProjects/tracer_pools/.venv/bin/geckodriver")
     driver = webdriver.Firefox(
         service=s,
@@ -66,6 +62,7 @@ def main():
     )
     driver.install_addon(ADDON_PATH, temporary=True)
     time.sleep(1)
+    # switch to second tab
     window_handles = driver.window_handles
     driver.switch_to.window(window_handles[1])
 
@@ -76,15 +73,18 @@ def main():
         WebDriverWait(driver, timeout).until(
             lambda driver: len(handles_before) != len(driver.window_handles)
         )
-
     def wait_and_click(xpath):
         try:
+            # elem = WebDriverWait(driver, 30).until(
+            # EC.element_to_be_clickable((By.XPATH, xpath)))
             elem = WebDriverWait(driver, 15).until(
                 EC.presence_of_element_located((By.XPATH, xpath))
             )
+            # elem.click() 
             driver.execute_script("arguments[0].click();", elem)
         except Exception as e:
             print(f"exception occured: {e}")
+            print(f"the error occured with this xpath: {xpath}")
             driver.quit()
             sys.exit()
 
@@ -95,7 +95,7 @@ def main():
     wait_and_click(
         "/html/body/div[1]/div/div[2]/div/div/div/div[5]/div[1]/footer/button[1]"
     )
-    time.sleep(1)
+    time.sleep(2)
     # enter recovery phrase and new password into input boxes
     inputs = driver.find_elements(By.XPATH, "//input")
     inputs[0].send_keys(SECRET_RECOVERY_PHRASE)
@@ -153,12 +153,36 @@ def main():
     wait_and_click("/html/body/div[3]/div/div/div/div[2]/div[1]/div[2]")
     time.sleep(1)
     driver.refresh()
-    time.sleep(1)
+    time.sleep(20)
+    driver.refresh()
+    time.sleep(4)
     # click dropdown menu for trading pairs
-    wait_and_click('//*[@id="headlessui-menu-button-3"]')
+    while True:
+        try:
+            driver.find_element(By.XPATH, '/html/body/div[1]/div/div/div[1]/nav/div/span/div[1]/button/span')
+            break
+        except:
+            driver.refresh()
+    wait_and_click(SELECT_DROPDOWN)
     time.sleep(1)
+    counter = 0
+    xpaths = []
+    for i in range(3,20):
+        if counter < 2:
+            try:
+                elem = WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located((By.XPATH, f'//*[@id="headlessui-menu-item-{i}"]'))
+                    )
+                driver.execute_script("arguments[0].click();", elem)
+                counter += 1
+                xpaths.append(f'//*[@id="headlessui-menu-item-{i}"]')
+            except:
+                print(f'//*[@id="headlessui-menu-item-{i}"] does not exist')
+    print(xpaths)
+    BTC_OPTION = xpaths[0]
+    ETH_OPTION = xpaths[1]
     # wait for dropdown options to appear and click first option
-    wait_and_click(BTC_DROPDOWN)
+    wait_and_click(BTC_OPTION)
     # select input
     amount_input = driver.find_elements(By.XPATH, "//input")[0]
     # add 1000 to input field
